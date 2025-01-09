@@ -1,178 +1,183 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from scipy.stats import linregress
 from scipy.interpolate import interp1d
 import plotly.express as px
 
-# Function to parse axis data
+# Set page configuration
+st.set_page_config(page_title="ECU Map Scaling App", layout="wide")
+
+# Title
+st.title("ECU Map Scaling Application")
+
+# Helper functions
 def parse_axis(text, dtype=float):
     try:
-        return [dtype(item) for item in text.strip().replace(',', ' ').split()]
+        axis = [dtype(item) for item in text.strip().replace(',', ' ').split()]
+        return axis
     except ValueError:
         return None
 
-# Function to parse map data
 def parse_map(text, dtype=float):
     try:
         data = [line.strip().replace(',', ' ').split() for line in text.strip().split('\n')]
-        return pd.DataFrame([[dtype(cell) for cell in row] for row in data])
+        data = [[dtype(item) for item in row] for row in data]
+        df = pd.DataFrame(data)
+        return df
     except ValueError:
         return None
 
-# Function to extend air mass map with new points
-def extend_air_mass_map(torque_axis, map_df, new_points):
-    # Combine the original axis with new points
-    extended_axis = sorted(torque_axis + new_points)
+def forecast_linear(x, y, new_x):
+    """Forecast new y values using linear interpolation."""
+    x = np.array(x)
+    y = np.array(y)
+    coefficients = np.polyfit(x, y, 1)  # Linear fit
+    return coefficients[0] * new_x + coefficients[1]
 
-    # Create a new DataFrame for the extended map
-    extended_map = pd.DataFrame(index=extended_axis, columns=map_df.columns)
-
-    # Copy original data to the new map
-    for col in map_df.columns:
-        extended_map.loc[torque_axis, col] = map_df[col]
-
-        # Perform linear regression using the last 4 rows
-        last_rows = map_df[col].iloc[-4:]
-        last_indices = torque_axis[-4:]
-        slope, intercept, _, _, _ = linregress(last_indices, last_rows)
-
-        # Forecast values for new points
-        for point in new_points:
-            extended_map.loc[point, col] = slope * point + intercept
-
-    return extended_axis, extended_map
-
-# Function to suggest new torque axis points based on air mass averages
-def suggest_torque_axis(air_mass_map, new_air_mass_points):
-    suggested_torque_points = []
-    for point in new_air_mass_points:
-        row_values = air_mass_map.loc[point]
-        suggested_torque_points.append(row_values.mean())
-    return suggested_torque_points
-
-# Function to extend torque map based on forecast
-def forecast_torque_map(torque_axis, map_df, new_points):
-    # Combine the original axis with new points
-    extended_axis = sorted(torque_axis + new_points)
-
-    # Create a new DataFrame for the extended map
-    extended_map = pd.DataFrame(index=extended_axis, columns=map_df.columns)
-
-    # Copy original data to the new map
-    for col in map_df.columns:
-        extended_map.loc[torque_axis, col] = map_df[col]
-
-        # Perform linear regression using the last 4 rows
-        last_rows = map_df[col].iloc[-4:]
-        last_indices = torque_axis[-4:]
-        slope, intercept, _, _, _ = linregress(last_indices, last_rows)
-
-        # Forecast values for new points
-        for point in new_points:
-            extended_map.loc[point, col] = slope * point + intercept
-
-    return extended_axis, extended_map
-
-# Streamlit App
-st.title("Air Mass and Torque Map Extension")
-
-# Sidebar for input data
+# Sidebar for user inputs
 st.sidebar.header("Input Data")
+
+# RPM Axis
+st.sidebar.subheader("1. RPM Axis")
 rpm_input = st.sidebar.text_area(
-    "RPM Axis (separated by spaces):",
+    "Paste RPM axis values (separated by spaces or tabs):",
     value="650 800 992 1248 1500 1750 2016 2496 3008 3488 4000 4512 4992 5504 6016 6592"
 )
-torque_axis_input = st.sidebar.text_area(
-    "Torque Axis (separated by spaces):",
-    value="0 25 50 100 150 200 250 300 350 400 450 500"
-)
-air_mass_map_input = st.sidebar.text_area(
-    "Air Mass Map Data (rows separated by newlines, columns by spaces):",
-    value="""0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-112.799 110.298 108.517 105.084 103.982 103.007 102.583 100.082 96.182 97.793 102.116 49.299 45.696 48.197 100.718 103.897
-180.495 177.485 174.518 170.406 169.516 168.71 169.007 168.287 162.988 165.489 167.82 158.791 155.782 160.996 166.294 168.117
-319.193 315.802 309.613 305.798 304.908 303.891 303.001 304.484 298.889 299.694 298.804 292.191 292.7 296.896 297.108 297.999
-513.38 453.907 445.006 438.817 437.121 436.316 437.121 439.792 434.917 433.179 433.688 444.115 448.1 447.295 445.981 449.88
-663.397 598.795 575.396 569.08 562.679 561.407 570.818 574.294 572.301 568.614 569.08 584.086 588.791 585.315 586.502 592.479"""
-)
-torque_map_input = st.sidebar.text_area(
-    "Torque Map Data (rows separated by newlines, columns by spaces):",
-    value="""2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.281 1.281 1.281 1.281 25.344 27.375 25.938 23.219 22.031
-20.281 21.188 21.781 23.062 23.469 23.844 24.031 24.969 26.969 26.094 24.188 27.875 29.375 27.562 24.719 23.469
-57.188 58.344 59.656 61.344 61.656 61.906 61.656 61.594 63.5 62.562 62.281 65.5 66.312 64.344 62.875 62.406"""
-)
-
-# Parse the inputs
 rpm_axis = parse_axis(rpm_input)
-torque_axis = parse_axis(torque_axis_input)
-air_mass_map = parse_map(air_mass_map_input)
+if not rpm_axis:
+    st.sidebar.error("Invalid RPM axis data. Please check the format.")
+    st.stop()
+
+# Torque Axis for Air Mass Map
+st.sidebar.subheader("2. Torque Axis for Air Mass Map")
+torque_airmass_input = st.sidebar.text_area(
+    "Paste Torque Air Mass axis values (one per line):",
+    value="0\n25\n50\n100\n150\n200\n250\n300\n350\n400\n450\n500"
+)
+torque_airmass_axis = parse_axis(torque_airmass_input, dtype=float)
+if not torque_airmass_axis:
+    st.sidebar.error("Invalid Torque Air Mass axis data. Please check the format.")
+    st.stop()
+
+# Air Mass Map Data
+st.sidebar.subheader("3. Air Mass Map Data")
+airmass_map_input = st.sidebar.text_area(
+    "Paste Air Mass map data (rows separated by newlines, columns by spaces or tabs):",
+    value="..."  # Add default Air Mass Map data here
+)
+airmass_map = parse_map(airmass_map_input)
+if airmass_map is None:
+    st.sidebar.error("Invalid Air Mass map data. Please check the format.")
+    st.stop()
+
+# Torque Axis for Torque Map
+st.sidebar.subheader("4. Torque Axis for Torque Map")
+torque_map_input = st.sidebar.text_area(
+    "Paste Torque axis values for Torque Map (one per line):",
+    value="50.02\n99.997\n199.994\n299.991\n399.013\n499.01\n599.007\n702.014\n800.018\n898.998\n1100.009\n1400"
+)
+torque_map_axis = parse_axis(torque_map_input, dtype=float)
+if not torque_map_axis:
+    st.sidebar.error("Invalid Torque Map axis data. Please check the format.")
+    st.stop()
+
+# Torque Map Data
+st.sidebar.subheader("5. Torque Map Data")
+torque_map_input = st.sidebar.text_area(
+    "Paste Torque map data (rows separated by newlines, columns by spaces or tabs):",
+    value="..."  # Add default Torque Map data here
+)
 torque_map = parse_map(torque_map_input)
+if torque_map is None:
+    st.sidebar.error("Invalid Torque map data. Please check the format.")
+    st.stop()
 
-if rpm_axis and torque_axis and air_mass_map is not None and torque_map is not None:
-    air_mass_map.columns = rpm_axis
-    air_mass_map.index = torque_axis
-    torque_map.columns = rpm_axis
-    torque_map.index = torque_axis
+# Extend Air Mass Map
+st.header("Extend Air Mass Map")
+new_torque_points = [550, 600, 650]
+airmass_map.columns = rpm_axis
+airmass_map.index = torque_airmass_axis
 
-    st.sidebar.success("Parsed data successfully!")
+extended_airmass_map = airmass_map.copy()
+for new_point in new_torque_points:
+    new_values = []
+    for rpm in rpm_axis:
+        x_values = airmass_map.index[-4:]
+        y_values = airmass_map[rpm].iloc[-4:]
+        new_value = forecast_linear(x_values, y_values, new_point)
+        new_values.append(new_value)
+    extended_airmass_map.loc[new_point] = new_values
 
-    # Input for new axis points for air mass map
-    new_air_mass_points = st.sidebar.text_area(
-        "New Air Mass Points (separated by spaces):",
-        value="550 600 650"
+extended_airmass_map.sort_index(inplace=True)
+
+st.subheader("Extended Air Mass Map")
+st.dataframe(extended_airmass_map)
+
+# Suggest New Torque Map Axis
+new_torque_axis_points = extended_airmass_map.loc[new_torque_points].mean(axis=1).values
+new_torque_map_axis = list(torque_map_axis) + list(new_torque_axis_points)
+new_torque_map_axis.sort()
+
+# Extend Torque Map
+st.header("Extend Torque Map")
+torque_map.columns = rpm_axis
+torque_map.index = torque_map_axis
+
+extended_torque_map = torque_map.copy()
+for new_point in new_torque_axis_points:
+    new_values = []
+    for rpm in rpm_axis:
+        x_values = torque_map.index[-4:]
+        y_values = torque_map[rpm].iloc[-4:]
+        new_value = forecast_linear(x_values, y_values, new_point)
+        new_values.append(new_value)
+    extended_torque_map.loc[new_point] = new_values
+
+extended_torque_map.sort_index(inplace=True)
+
+st.subheader("Extended Torque Map")
+st.dataframe(extended_torque_map)
+
+# Visualization
+st.header("Visualize Scaled Maps")
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("Air Mass Map Heatmap")
+    fig_airmass = px.imshow(
+        extended_airmass_map,
+        labels={"x": "RPM", "y": "Torque Air Mass Axis"},
+        color_continuous_scale="Viridis"
     )
-    new_air_mass_points = parse_axis(new_air_mass_points)
+    st.plotly_chart(fig_airmass)
 
-    if new_air_mass_points:
-        # Extend air mass map
-        extended_air_mass_axis, extended_air_mass_map = extend_air_mass_map(torque_axis, air_mass_map, new_air_mass_points)
+with col2:
+    st.subheader("Torque Map Heatmap")
+    fig_torque = px.imshow(
+        extended_torque_map,
+        labels={"x": "RPM", "y": "Torque Axis"},
+        color_continuous_scale="Inferno"
+    )
+    st.plotly_chart(fig_torque)
 
-        # Suggest new torque axis points
-        suggested_torque_axis = suggest_torque_axis(extended_air_mass_map, new_air_mass_points)
+# Download Options
+st.header("Download Scaled Maps")
+def convert_df_to_csv(df):
+    return df.to_csv(index=True).encode("utf-8")
 
-        # Extend torque map based on suggested points
-        extended_torque_axis, extended_torque_map = forecast_torque_map(torque_axis, torque_map, suggested_torque_axis)
+st.download_button(
+    label="Download Scaled Air Mass Map",
+    data=convert_df_to_csv(extended_airmass_map),
+    file_name="scaled_airmass_map.csv",
+    mime="text/csv",
+)
 
-        # Display results
-        st.subheader("Extended Air Mass Map")
-        st.dataframe(extended_air_mass_map)
+st.download_button(
+    label="Download Scaled Torque Map",
+    data=convert_df_to_csv(extended_torque_map),
+    file_name="scaled_torque_map.csv",
+    mime="text/csv",
+)
 
-        st.subheader("Extended Torque Map")
-        st.dataframe(extended_torque_map)
-
-        # Visualization
-        st.subheader("Visualization: Extended Air Mass Map")
-        fig1 = px.imshow(
-            extended_air_mass_map,
-            labels={'x': "RPM", 'y': "Torque"},
-            color_continuous_scale="Viridis"
-        )
-        st.plotly_chart(fig1)
-
-        st.subheader("Visualization: Extended Torque Map")
-        fig2 = px.imshow(
-            extended_torque_map,
-            labels={'x': "RPM", 'y': "Torque"},
-            color_continuous_scale="Inferno"
-        )
-        st.plotly_chart(fig2)
-
-        # Download the extended maps
-        st.download_button(
-            label="Download Extended Air Mass Map as CSV",
-            data=extended_air_mass_map.to_csv(index=True).encode('utf-8'),
-            file_name='extended_air_mass_map.csv',
-            mime='text/csv',
-        )
-
-        st.download_button(
-            label="Download Extended Torque Map as CSV",
-            data=extended_torque_map.to_csv(index=True).encode('utf-8'),
-            file_name='extended_torque_map.csv',
-            mime='text/csv',
-        )
-    else:
-        st.error("Please provide valid new air mass points.")
-else:
-    st.error("Please provide valid input data.")
+st.markdown("---")
+st.markdown("© 2025 ECU Map Scaling App")
