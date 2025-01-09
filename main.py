@@ -189,89 +189,81 @@ with col2:
 st.header("Scale Torque Axis")
 
 st.markdown("""
-Enter the new maximum torque value you want to scale the torque axis to. The app will adjust the torque and airflow maps accordingly using linear regression based on the last three known data points.
+Enter the new maximum torque value you want to scale the torque axis to. The app will adjust the torque and airflow maps accordingly by scaling the last three data points and interpolating the rest.
 """)
 
 # Input for new max torque
-# Fixing the error by setting min_value to the smallest torque value or lower
 new_max_torque = st.number_input(
     "Enter the new maximum torque (e.g., 650):",
-    min_value=0.0,  # Changed from torque_map_axis[-1] to 0.0
+    min_value=0.0,  # Allow 0 or more
     max_value=20000.0,
     value=650.0,
     step=1.0
 )
 
 # Define new torque axis for airflow map
-# Ensure the new max torque is included
-new_torque_axis = sorted(list(set([0, 25, 50, 100, 150, 200, 250, 300, 350, 450, 550, new_max_torque])))
+# Get the last three torque axis points
+x1, x2, x3 = torque_map_axis[-3:]
 
-# Display new torque axis
-st.write("**New Torque Axis for Airflow Map:**")
-st.write(new_torque_axis)
+# Define new y1' and y2' based on the desired scaling
+# Assuming equal scaling steps between points
+# Calculate the scaling factor based on mapping x1 to y1' and x3 to y3'
+# y1' = new_max_torque - 2*(x3 - x1)
+y1_prime = new_max_torque - 2*(x3 - x1)
+y2_prime = new_max_torque - (x3 - x2)
 
-# Perform linear regression based on the last three data points
-# Ensure that there are at least three data points
-if len(torque_map_axis) < 3:
-    st.error("Not enough data points in Torque Map Axis to perform scaling.")
-    st.stop()
+# Compute scaling factor (a) and intercept (b)
+a = (new_max_torque - y1_prime) / (x3 - x1)
+b = y1_prime - a * x1
 
-# Extract the last three torque points and their corresponding new values
-last_three_torque = np.array(torque_map_axis[-3:]).reshape(-1, 1)
-last_three_new_torque = np.array(new_torque_axis[-3:]).reshape(-1, 1)
+st.write(f"**Scaling Factor (a):** {a:.4f}")
+st.write(f"**Intercept (b):** {b:.4f}")
 
-# Fit linear regression model
-reg = LinearRegression()
-reg.fit(last_three_torque, last_three_new_torque)
+# Define scaling function
+def scale_torque(x):
+    if x < x1:
+        return x
+    else:
+        return a * x + b
 
-# Predict scaling factor and intercept
-scaling_factor = reg.coef_[0][0]
-intercept = reg.intercept_[0]
+# Apply scaling to torque axis
+new_torque_axis = [scale_torque(x) for x in torque_map_axis]
 
-st.write(f"**Scaling Factor:** {scaling_factor:.4f}")
-st.write(f"**Intercept:** {intercept:.4f}")
-
-# Scale the airflow (assuming airflow scales linearly with torque)
-# Update Torque Air Mass Axis based on scaling
-new_torque_airmass_axis = [scaling_factor * torque + intercept for torque in torque_airmass_axis]
+# Update Torque Air Mass Axis
+new_torque_airmass_axis = [scale_torque(x) for x in torque_airmass_axis]
 
 # Create new Air Mass DataFrame
 new_airmass_df = airmass_df.copy()
 new_airmass_df.index = new_torque_airmass_axis
 
-# Update Torque Map Axis
-new_torque_map_axis = new_torque_axis.copy()
+# Interpolate the air mass map to the new torque air mass axis
+# Use linear interpolation
+interpolated_values = {}
+for rpm in rpm_axis:
+    # Original data
+    original_x = airmass_df.index.values
+    original_y = airmass_df[rpm].values
+    # New x
+    new_x = new_torque_airmass_axis
+    # Interpolate
+    new_y = np.interp(new_x, original_x, original_y)
+    interpolated_values[rpm] = new_y
 
-# Create new Torque DataFrame by interpolating to new torque axis
-new_rpm_axis = rpm_axis.copy()
-new_torque_df = pd.DataFrame(columns=new_rpm_axis, index=new_torque_map_axis)
+new_airmass_df_interpolated = pd.DataFrame(interpolated_values, index=new_torque_airmass_axis)
 
-for rpm in new_rpm_axis:
-    # Get the original torque and corresponding values
+# Create new Torque Map DataFrame
+new_torque_df = pd.DataFrame(columns=rpm_axis, index=new_torque_axis)
+
+for rpm in rpm_axis:
+    # Original torque axis and torque map data
     X = np.array(torque_df.index).reshape(-1, 1)
     y = torque_df[rpm].values
-    # Fit linear regression
+    # Fit linear model
     model = LinearRegression()
     model.fit(X, y)
     # Predict for new torque axis
-    new_y = model.predict(np.array(new_torque_map_axis).reshape(-1,1))
+    new_y = model.predict(np.array(new_torque_axis).reshape(-1,1))
     new_torque_df[rpm] = new_y
-
-# Update Air Mass Map based on new torque air mass axis
-# Assuming linear relationship for simplicity
-# Interpolate the Air Mass Map to the new torque air mass axis
-# To handle non-exact indices, we'll use interpolation
-# First, reset the index to ensure it's sorted
-new_airmass_df_sorted = new_airmass_df.sort_index()
-# Interpolate to new torque air mass axis
-interpolated_values = {}
-for rpm in new_rpm_axis:
-    interpolated_values[rpm] = np.interp(
-        new_torque_airmass_axis,
-        new_airmass_df_sorted.index,
-        new_airmass_df_sorted[rpm]
-    )
-new_airmass_df_interpolated = pd.DataFrame(interpolated_values, index=new_torque_airmass_axis)
 
 # Display the scaled maps as tables
 st.header("Scaled ECU Maps as Tables")
