@@ -294,4 +294,4 @@ st.download_button(
 )
 
 st.markdown("---")
-st.markdown("© 2025 ECU Map Scaling App")
+st.markdown("© 2025 SXTH Element Engineering")
