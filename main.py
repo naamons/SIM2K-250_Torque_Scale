@@ -11,18 +11,22 @@ st.title("ECU Map Scaling Application")
 # Helper functions
 def parse_axis(text, dtype=float):
     try:
-        axis = [dtype(item) for item in text.strip().replace(',', ' ').split()]
+        # Split by any whitespace or commas
+        axis = [dtype(item) for item in text.replace(',', ' ').split()]
         return axis
     except ValueError:
+        st.error("Invalid axis format. Please ensure all values are numbers separated by spaces or commas.")
         return None
 
 def parse_map(text, dtype=float):
     try:
-        data = [line.strip().replace(',', ' ').split() for line in text.strip().split('\n')]
+        # Split each line by any whitespace or commas
+        data = [line.strip().replace(',', ' ').split() for line in text.strip().split('\n') if line.strip()]
         data = [[dtype(item) for item in row] for row in data]
         df = pd.DataFrame(data)
         return df
     except ValueError:
+        st.error("Invalid map data format. Please ensure all values are numbers separated by spaces or commas.")
         return None
 
 def forecast_linear(x, y, new_x):
@@ -35,19 +39,32 @@ def forecast_linear(x, y, new_x):
 # Sidebar for user inputs
 st.sidebar.header("Input Data")
 
-# RPM Axis
+# 1. RPM Axis
 st.sidebar.subheader("1. RPM Axis")
-rpm_input = "650 800 992 1248 1500 1750 2016 2496 3008 3488 4000 4512 4992 5504 6016 6592"
+default_rpm_input = "650 800 992 1248 1500 1750 2016 2496 3008 3488 4000 4512 4992 5504 6016 6592"
+rpm_input = st.sidebar.text_area("Edit RPM Axis (space or comma separated):", default_rpm_input, height=100)
 rpm_axis = parse_axis(rpm_input)
 
-# Torque Axis for Air Mass Map
+# 2. Torque Axis for Air Mass Map
 st.sidebar.subheader("2. Torque Axis for Air Mass Map")
-torque_airmass_input = "0\n25\n50\n100\n150\n200\n250\n300\n350\n400\n450\n500"
+default_torque_airmass_input = """0
+25
+50
+100
+150
+200
+250
+300
+350
+400
+450
+500"""
+torque_airmass_input = st.sidebar.text_area("Edit Torque Axis for Air Mass Map (one value per line):", default_torque_airmass_input, height=150)
 torque_airmass_axis = parse_axis(torque_airmass_input)
 
-# Air Mass Map Data
+# 3. Air Mass Map Data
 st.sidebar.subheader("3. Air Mass Map Data")
-airmass_map_input = """0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+default_airmass_map_input = """0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 112.799 110.298 108.517 105.084 103.982 103.007 102.583 100.082 96.182 97.793 102.116 49.299 45.696 48.197 100.718 103.897
 180.495 177.485 174.518 170.406 169.516 168.71 169.007 168.287 162.988 165.489 167.82 158.791 155.782 160.996 166.294 168.117
 319.193 315.802 309.613 305.798 304.908 303.891 303.001 304.484 298.889 299.694 298.804 292.191 292.7 296.896 297.108 297.999
@@ -59,18 +76,41 @@ airmass_map_input = """0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 1334.211 1301.02 1279.91 1190.808 1211.621 1214.588 1156.514 1162.915 1163 1164.017 1157.489 1198.904 1233.494 1266.303 1304.581 1323.317
 1515.893 1481.303 1452.394 1409.114 1382.917 1369.48 1343.495 1346.801 1343.198 1343.495 1330.82 1381.9 1420.389 1466.679 1505.296 1512.502
 1684.307 1645.817 1613.813 1565.701 1538.487 1522.294 1504.999 1507.119 1503.007 1503.092 1489.484 1538.699 1578.206 1629.709 1672.48 1680.492"""
+airmass_map_input = st.sidebar.text_area("Edit Air Mass Map Data (rows separated by new lines):", default_airmass_map_input, height=400)
 airmass_map = parse_map(airmass_map_input)
-airmass_map.columns = rpm_axis
-airmass_map.index = torque_airmass_axis
 
-# Airflow Axis for Torque Map
+# Assign RPM and Torque Airmass Axis if parsing was successful
+if rpm_axis and torque_airmass_axis and not airmass_map.empty:
+    if len(airmass_map.columns) != len(rpm_axis):
+        st.error("Number of RPM axis values does not match number of columns in Air Mass Map data.")
+    elif len(airmass_map.index) != len(torque_airmass_axis):
+        st.error("Number of Torque Air Mass axis values does not match number of rows in Air Mass Map data.")
+    else:
+        airmass_map.columns = rpm_axis
+        airmass_map.index = torque_airmass_axis
+else:
+    st.stop()
+
+# 4. Airflow Axis for Torque Map
 st.sidebar.subheader("4. Airflow Axis for Torque Map")
-torque_map_input = "50.02\n99.997\n199.994\n299.991\n399.013\n499.01\n599.007\n702.014\n800.018\n898.998\n1100.009\n1400"
-torque_map_axis = parse_axis(torque_map_input)
+default_torque_map_input_axis = """50.02
+99.997
+199.994
+299.991
+399.013
+499.01
+599.007
+702.014
+800.018
+898.998
+1100.009
+1400"""
+torque_map_axis_input = st.sidebar.text_area("Edit Airflow Axis for Torque Map (one value per line):", default_torque_map_input_axis, height=150)
+torque_map_axis = parse_axis(torque_map_axis_input)
 
-# Torque Map Data
+# 5. Torque Map Data
 st.sidebar.subheader("5. Torque Map Data")
-torque_map_input = """2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.281 1.281 1.281 1.281 25.344 27.375 25.938 23.219 22.031
+default_torque_map_input_data = """2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.281 1.281 1.281 1.281 25.344 27.375 25.938 23.219 22.031
 20.281 21.188 21.781 23.062 23.469 23.844 24.031 24.969 26.969 26.094 24.188 27.875 29.375 27.562 24.719 23.469
 57.188 58.344 59.656 61.344 61.656 61.906 61.656 61.594 63.5 62.562 62.281 65.5 66.312 64.344 62.875 62.406
 93.094 94.312 96.469 97.844 98.188 98.531 98.875 98.344 100.406 100.125 100.469 102.906 102.656 101.156 101.094 100.781
@@ -82,57 +122,90 @@ torque_map_input = """2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.281 1.281 1.28
 267.188 273.25 275.125 280.281 289.875 302.062 313.5 318.344 315.656 314.719 313.812 306.438 305.312 304.969 300.875 300.719
 339.531 348.594 349.438 379.562 367.438 363 384.875 382.906 382.531 382.188 383.406 373 365.094 363.25 360.25 351.844
 410.594 425.312 433.75 447.094 455 459.844 465.125 464.469 465.75 465.719 469.969 454.938 443.531 429.531 418.531 416.531"""
+torque_map_input = st.sidebar.text_area("Edit Torque Map Data (rows separated by new lines):", default_torque_map_input_data, height=400)
 torque_map = parse_map(torque_map_input)
-torque_map.columns = rpm_axis
-torque_map.index = torque_map_axis
 
-# New Maximum Torque Input
+# Assign Torque Map Axis if parsing was successful
+if torque_map_axis and not torque_map.empty:
+    if len(torque_map.columns) != len(rpm_axis):
+        st.error("Number of RPM axis values does not match number of columns in Torque Map data.")
+    elif len(torque_map.index) != len(torque_map_axis):
+        st.error("Number of Torque Map axis values does not match number of rows in Torque Map data.")
+    else:
+        torque_map.columns = rpm_axis
+        torque_map.index = torque_map_axis
+else:
+    st.stop()
+
+# 6. New Maximum Torque Input
 st.sidebar.subheader("6. New Maximum Torque Axis Value")
 new_max_torque = st.sidebar.number_input(
-    "Enter the new maximum torque value (e.g., 650):",
-    min_value=0.0,
+    "Enter the new maximum torque value (e.g., 700):",
+    min_value=max(torque_airmass_axis) if torque_airmass_axis else 0.0,
     max_value=20000.0,
-    value=650.0,
+    value=max(torque_airmass_axis) if torque_airmass_axis else 650.0,
     step=1.0
 )
 
-# Extend Air Mass Map
-st.header("Extend Air Mass Map")
-new_torque_points = [550, 600, new_max_torque]
-extended_airmass_map = airmass_map.copy()
-for new_point in new_torque_points:
-    new_values = []
-    for rpm in rpm_axis:
-        x_values = airmass_map.index[-4:]
-        y_values = airmass_map[rpm].iloc[-4:]
-        new_value = forecast_linear(x_values, y_values, new_point)
-        new_values.append(new_value)
-    extended_airmass_map.loc[new_point] = new_values
+# Function to generate smoothly interpolated torque points
+def generate_smooth_torque_points(current_axis, new_max, num_points=10):
+    """Generate smoothly interpolated torque points between the last current axis value and new_max."""
+    last = current_axis[-1]
+    if new_max <= last:
+        st.warning("New maximum torque must be greater than the current maximum torque.")
+        return []
+    return list(np.linspace(last + (new_max - last)/num_points, new_max, num_points))
 
-extended_airmass_map.sort_index(inplace=True)
-st.subheader("Extended Air Mass Map")
-st.dataframe(extended_airmass_map)
+# Generate new torque points for Air Mass Map
+new_torque_points = generate_smooth_torque_points(torque_airmass_axis, new_max_torque, num_points=10)
+
+# Extend Air Mass Map
+if new_torque_points:
+    extended_airmass_map = airmass_map.copy()
+    for new_point in new_torque_points:
+        new_values = []
+        for rpm in rpm_axis:
+            # Use the last few points for interpolation
+            if len(airmass_map) >= 4:
+                x_values = airmass_map.index[-4:]
+                y_values = airmass_map[rpm].iloc[-4:]
+            else:
+                x_values = airmass_map.index
+                y_values = airmass_map[rpm]
+            new_value = forecast_linear(x_values, y_values, new_point)
+            new_values.append(new_value)
+        extended_airmass_map.loc[new_point] = new_values
+    extended_airmass_map.sort_index(inplace=True)
+else:
+    extended_airmass_map = airmass_map.copy()
+
+st.header("Extended Air Mass Map")
+st.dataframe(extended_airmass_map.style.format("{:.2f}"))
 
 # Suggest New Torque Map Axis
-new_torque_axis_points = extended_airmass_map.loc[new_torque_points].mean(axis=1).values
-new_torque_map_axis = list(torque_map_axis) + list(new_torque_axis_points)
-new_torque_map_axis.sort()
+# Calculate mean torque for the new points to align with Torque Map Axis
+new_torque_axis_points = extended_airmass_map.loc[new_torque_points].mean(axis=1).values if new_torque_points else []
+combined_torque_map_axis = sorted(list(torque_map_axis) + list(new_torque_axis_points))
 
 # Extend Torque Map
-st.header("Extend Torque Map")
 extended_torque_map = torque_map.copy()
 for new_point in new_torque_axis_points:
     new_values = []
     for rpm in rpm_axis:
-        x_values = torque_map.index[-4:]
-        y_values = torque_map[rpm].iloc[-4:]
+        # Use the last few points for interpolation
+        if len(torque_map) >= 4:
+            x_values = torque_map.index[-4:]
+            y_values = torque_map[rpm].iloc[-4:]
+        else:
+            x_values = torque_map.index
+            y_values = torque_map[rpm]
         new_value = forecast_linear(x_values, y_values, new_point)
         new_values.append(new_value)
     extended_torque_map.loc[new_point] = new_values
-
 extended_torque_map.sort_index(inplace=True)
-st.subheader("Extended Torque Map")
-st.dataframe(extended_torque_map)
+
+st.header("Extended Torque Map")
+st.dataframe(extended_torque_map.style.format("{:.2f}"))
 
 # Download Options
 st.header("Download Scaled Maps")
