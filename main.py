@@ -37,17 +37,31 @@ st.sidebar.header("Input Data")
 
 # RPM Axis
 st.sidebar.subheader("1. RPM Axis")
-rpm_input = "650 800 992 1248 1500 1750 2016 2496 3008 3488 4000 4512 4992 5504 6016 6592"
+rpm_input = st.sidebar.text_area(
+    "Paste RPM axis values (separated by spaces or tabs):",
+    value="650 800 992 1248 1500 1750 2016 2496 3008 3488 4000 4512 4992 5504 6016 6592"
+)
 rpm_axis = parse_axis(rpm_input)
+if not rpm_axis:
+    st.sidebar.error("Invalid RPM axis data. Please check the format.")
+    st.stop()
 
 # Torque Axis for Air Mass Map
 st.sidebar.subheader("2. Torque Axis for Air Mass Map")
-torque_airmass_input = "0\n25\n50\n100\n150\n200\n250\n300\n350\n400\n450\n500"
+torque_airmass_input = st.sidebar.text_area(
+    "Paste Torque Air Mass axis values (one per line):",
+    value="0\n25\n50\n100\n150\n200\n250\n300\n350\n400\n450\n500"
+)
 torque_airmass_axis = parse_axis(torque_airmass_input)
+if not torque_airmass_axis:
+    st.sidebar.error("Invalid Torque Air Mass axis data. Please check the format.")
+    st.stop()
 
 # Air Mass Map Data
 st.sidebar.subheader("3. Air Mass Map Data")
-airmass_map_input = """0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+airmass_map_input = st.sidebar.text_area(
+    "Paste Air Mass map data (rows separated by newlines, columns by spaces or tabs):",
+    value="""0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 112.799 110.298 108.517 105.084 103.982 103.007 102.583 100.082 96.182 97.793 102.116 49.299 45.696 48.197 100.718 103.897
 180.495 177.485 174.518 170.406 169.516 168.71 169.007 168.287 162.988 165.489 167.82 158.791 155.782 160.996 166.294 168.117
 319.193 315.802 309.613 305.798 304.908 303.891 303.001 304.484 298.889 299.694 298.804 292.191 292.7 296.896 297.108 297.999
@@ -59,18 +73,28 @@ airmass_map_input = """0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 1334.211 1301.02 1279.91 1190.808 1211.621 1214.588 1156.514 1162.915 1163 1164.017 1157.489 1198.904 1233.494 1266.303 1304.581 1323.317
 1515.893 1481.303 1452.394 1409.114 1382.917 1369.48 1343.495 1346.801 1343.198 1343.495 1330.82 1381.9 1420.389 1466.679 1505.296 1512.502
 1684.307 1645.817 1613.813 1565.701 1538.487 1522.294 1504.999 1507.119 1503.007 1503.092 1489.484 1538.699 1578.206 1629.709 1672.48 1680.492"""
+)
 airmass_map = parse_map(airmass_map_input)
-airmass_map.columns = rpm_axis
-airmass_map.index = torque_airmass_axis
+if airmass_map is None:
+    st.sidebar.error("Invalid Air Mass map data. Please check the format.")
+    st.stop()
 
 # Airflow Axis for Torque Map
 st.sidebar.subheader("4. Airflow Axis for Torque Map")
-torque_map_input = "50.02\n99.997\n199.994\n299.991\n399.013\n499.01\n599.007\n702.014\n800.018\n898.998\n1100.009\n1400"
+torque_map_input = st.sidebar.text_area(
+    "Paste Torque axis values for Torque Map (one per line):",
+    value="50.02\n99.997\n199.994\n299.991\n399.013\n499.01\n599.007\n702.014\n800.018\n898.998\n1100.009\n1400"
+)
 torque_map_axis = parse_axis(torque_map_input)
+if not torque_map_axis:
+    st.sidebar.error("Invalid Airflow axis data. Please check the format.")
+    st.stop()
 
 # Torque Map Data
 st.sidebar.subheader("5. Torque Map Data")
-torque_map_input = """2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.281 1.281 1.281 1.281 25.344 27.375 25.938 23.219 22.031
+torque_map_input = st.sidebar.text_area(
+    "Paste Torque map data (rows separated by newlines, columns by spaces or tabs):",
+    value="""2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.281 1.281 1.281 1.281 25.344 27.375 25.938 23.219 22.031
 20.281 21.188 21.781 23.062 23.469 23.844 24.031 24.969 26.969 26.094 24.188 27.875 29.375 27.562 24.719 23.469
 57.188 58.344 59.656 61.344 61.656 61.906 61.656 61.594 63.5 62.562 62.281 65.5 66.312 64.344 62.875 62.406
 93.094 94.312 96.469 97.844 98.188 98.531 98.875 98.344 100.406 100.125 100.469 102.906 102.656 101.156 101.094 100.781
@@ -82,9 +106,11 @@ torque_map_input = """2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.281 1.281 1.28
 267.188 273.25 275.125 280.281 289.875 302.062 313.5 318.344 315.656 314.719 313.812 306.438 305.312 304.969 300.875 300.719
 339.531 348.594 349.438 379.562 367.438 363 384.875 382.906 382.531 382.188 383.406 373 365.094 363.25 360.25 351.844
 410.594 425.312 433.75 447.094 455 459.844 465.125 464.469 465.75 465.719 469.969 454.938 443.531 429.531 418.531 416.531"""
+)
 torque_map = parse_map(torque_map_input)
-torque_map.columns = rpm_axis
-torque_map.index = torque_map_axis
+if torque_map is None:
+    st.sidebar.error("Invalid Torque map data. Please check the format.")
+    st.stop()
 
 # New Maximum Torque Input
 st.sidebar.subheader("6. New Maximum Torque Axis Value")
@@ -96,9 +122,11 @@ new_max_torque = st.sidebar.number_input(
     step=1.0
 )
 
+# Scale New Torque Axis Points
+new_torque_points = [new_max_torque * (550 / 650), new_max_torque * (600 / 650), new_max_torque]
+
 # Extend Air Mass Map
 st.header("Extend Air Mass Map")
-new_torque_points = [550, 600, new_max_torque]
 extended_airmass_map = airmass_map.copy()
 for new_point in new_torque_points:
     new_values = []
@@ -115,7 +143,7 @@ st.dataframe(extended_airmass_map)
 
 # Suggest New Torque Map Axis
 new_torque_axis_points = extended_airmass_map.loc[new_torque_points].mean(axis=1).values
-new_torque_map_axis = list(torque_map_axis) + list(new_torque_axis_points)
+new_torque_map_axis = list(torque_map.index) + list(new_torque_axis_points)
 new_torque_map_axis.sort()
 
 # Extend Torque Map
@@ -154,4 +182,4 @@ st.download_button(
 )
 
 st.markdown("---")
-st.markdown("© 2025 ECU Map Scaling App")
+st.markdown("© 2025 SXTH Element Engineering")
