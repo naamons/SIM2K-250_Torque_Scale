@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
-import plotly.express as px
 
 # Set page configuration
 st.set_page_config(page_title="ECU Map Scaling App", layout="wide")
@@ -70,15 +69,15 @@ if airmass_map is None:
     st.sidebar.error("Invalid Air Mass map data. Please check the format.")
     st.stop()
 
-# Torque Axis for Torque Map
-st.sidebar.subheader("4. Torque Axis for Torque Map")
+# Airflow Axis for Torque Map
+st.sidebar.subheader("4. Airflow Axis for Torque Map")
 torque_map_input = st.sidebar.text_area(
     "Paste Torque axis values for Torque Map (one per line):",
     value="50.02\n99.997\n199.994\n299.991\n399.013\n499.01\n599.007\n702.014\n800.018\n898.998\n1100.009\n1400"
 )
 torque_map_axis = parse_axis(torque_map_input, dtype=float)
 if not torque_map_axis:
-    st.sidebar.error("Invalid Torque Map axis data. Please check the format.")
+    st.sidebar.error("Invalid Airflow axis data. Please check the format.")
     st.stop()
 
 # Torque Map Data
@@ -137,28 +136,6 @@ extended_torque_map.sort_index(inplace=True)
 
 st.subheader("Extended Torque Map")
 st.dataframe(extended_torque_map)
-
-# Visualization
-st.header("Visualize Scaled Maps")
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Air Mass Map Heatmap")
-    fig_airmass = px.imshow(
-        extended_airmass_map,
-        labels={"x": "RPM", "y": "Torque Air Mass Axis"},
-        color_continuous_scale="Viridis"
-    )
-    st.plotly_chart(fig_airmass)
-
-with col2:
-    st.subheader("Torque Map Heatmap")
-    fig_torque = px.imshow(
-        extended_torque_map,
-        labels={"x": "RPM", "y": "Torque Axis"},
-        color_continuous_scale="Inferno"
-    )
-    st.plotly_chart(fig_torque)
 
 # Download Options
 st.header("Download Scaled Maps")
