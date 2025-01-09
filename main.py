@@ -33,6 +33,9 @@ def forecast_linear(x, y, new_x):
     """Forecast new y values using linear interpolation."""
     x = np.array(x)
     y = np.array(y)
+    if len(x) < 2:
+        st.warning("Not enough points for interpolation. At least two points are required.")
+        return np.nan
     coefficients = np.polyfit(x, y, 1)  # Linear fit
     return coefficients[0] * new_x + coefficients[1]
 
@@ -140,11 +143,14 @@ else:
 # 6. New Maximum Torque Input
 st.sidebar.subheader("6. New Maximum Torque Axis Value")
 current_max_torque = max(torque_airmass_axis) if torque_airmass_axis else 0.0
+default_increment = 200.0
+default_new_max = current_max_torque + default_increment
+
 new_max_torque = st.sidebar.number_input(
     "Enter the new maximum torque value (e.g., 700):",
     min_value=current_max_torque + 1.0,  # Ensure new max is greater than current max
     max_value=20000.0,
-    value=current_max_torque + 200.0,  # Default increment
+    value=default_new_max,  # Default increment
     step=1.0
 )
 
@@ -161,7 +167,7 @@ def generate_smooth_torque_points(current_axis, new_max, max_new_points=3):
 new_torque_points = generate_smooth_torque_points(torque_airmass_axis, new_max_torque, max_new_points=3)
 
 # Extend Air Mass Map
-if new_torque_points:
+if new_torque_points and isinstance(new_torque_points, list):
     extended_airmass_map = airmass_map.copy()
     for new_point in new_torque_points:
         new_values = []
@@ -185,22 +191,30 @@ new_airmass_rows = new_torque_points if new_torque_points else []
 
 # Display Extended Air Mass Map with Highlighted New Rows
 st.header("Extended Air Mass Map")
-def highlight_new_rows_airmass(x):
-    if x.name in new_airmass_rows:
-        return ['background-color: lightgreen'] * len(x)
+def highlight_new_rows_airmass(row):
+    if row.name in new_airmass_rows:
+        return ['background-color: lightgreen'] * len(row)
     else:
-        return [''] * len(x)
+        return [''] * len(row)
 
 styled_airmass_map = extended_airmass_map.style.apply(highlight_new_rows_airmass, axis=1)
 st.dataframe(styled_airmass_map.format("{:.2f}"))
 
 # Suggest New Torque Map Axis
 # Calculate mean torque for the new points to align with Torque Map Axis
-new_torque_axis_points = extended_airmass_map.loc[new_torque_points].mean(axis=1).values if new_torque_points else []
+if new_torque_points:
+    try:
+        new_torque_axis_points = extended_airmass_map.loc[new_torque_points].mean(axis=1).values
+    except KeyError as e:
+        st.error(f"Error accessing new torque points in Air Mass Map: {e}")
+        new_torque_axis_points = []
+else:
+    new_torque_axis_points = []
+
 combined_torque_map_axis = sorted(list(torque_map_axis) + list(new_torque_axis_points))
 
 # Extend Torque Map
-if new_torque_axis_points:
+if new_torque_axis_points.size > 0:
     extended_torque_map = torque_map.copy()
     for new_point in new_torque_axis_points:
         new_values = []
@@ -220,15 +234,15 @@ else:
     extended_torque_map = torque_map.copy()
 
 # Identify newly added rows for Torque Map
-new_torque_rows = new_torque_axis_points.tolist() if new_torque_axis_points else []
+new_torque_rows = new_torque_axis_points.tolist() if new_torque_axis_points.size > 0 else []
 
 # Display Extended Torque Map with Highlighted New Rows
 st.header("Extended Torque Map")
-def highlight_new_rows_torque(x):
-    if x.name in new_torque_rows:
-        return ['background-color: lightgreen'] * len(x)
+def highlight_new_rows_torque(row):
+    if row.name in new_torque_rows:
+        return ['background-color: lightgreen'] * len(row)
     else:
-        return [''] * len(x)
+        return [''] * len(row)
 
 styled_torque_map = extended_torque_map.style.apply(highlight_new_rows_torque, axis=1)
 st.dataframe(styled_torque_map.format("{:.2f}"))
