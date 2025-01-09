@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.linear_model import LinearRegression
 
 # Set page configuration
@@ -44,7 +42,7 @@ rpm_input = st.sidebar.text_area(
 )
 rpm_axis = parse_axis(rpm_input)
 if rpm_axis:
-    st.sidebar.write("Parsed RPM Axis:")
+    st.sidebar.write("**Parsed RPM Axis:**")
     st.sidebar.write(rpm_axis)
     confirm_rpm = st.sidebar.checkbox("Confirm RPM Axis", value=False)
 else:
@@ -58,7 +56,7 @@ torque_airmass_axis_input = st.sidebar.text_area(
 )
 torque_airmass_axis = parse_axis(torque_airmass_axis_input, dtype=float)
 if torque_airmass_axis:
-    st.sidebar.write("Parsed Torque Air Mass Axis:")
+    st.sidebar.write("**Parsed Torque Air Mass Axis:**")
     st.sidebar.write(torque_airmass_axis)
     confirm_torque_airmass = st.sidebar.checkbox("Confirm Torque Air Mass Axis", value=False)
 else:
@@ -68,22 +66,22 @@ else:
 st.sidebar.subheader("3. Air Mass Map Data")
 airmass_map_input = st.sidebar.text_area(
     "Paste Air Mass map data (rows separated by newlines, columns by spaces or tabs):",
-    value="""0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0
-112.799\t110.298\t108.517\t105.084\t103.982\t103.007\t102.583\t100.082\t96.182\t97.793\t102.116\t49.299\t45.696\t48.197\t100.718\t103.897
-180.495\t177.485\t174.518\t170.406\t169.516\t168.71\t169.007\t168.287\t162.988\t165.489\t167.82\t158.791\t155.782\t160.996\t166.294\t168.117
-319.193\t315.802\t309.613\t305.798\t304.908\t303.891\t303.001\t304.484\t298.889\t299.694\t298.804\t292.191\t292.7\t296.896\t297.108\t297.999
-513.38\t453.907\t445.006\t438.817\t437.121\t436.316\t437.121\t439.792\t434.917\t433.179\t433.688\t444.115\t448.1\t447.295\t445.981\t449.88
-663.397\t598.795\t575.396\t569.08\t562.679\t561.407\t570.818\t574.294\t572.301\t568.614\t569.08\t584.086\t588.791\t585.315\t586.502\t592.479
-815.787\t804.3\t804.003\t736.18\t709.305\t700.488\t707.016\t709.093\t711.297\t704.811\t707.016\t719.52\t723.505\t722.488\t731.22\t741.521
-976.316\t970.382\t966.312\t938.886\t925.195\t890.393\t856.82\t847.283\t853.811\t853.217\t855.888\t878.1\t881.618\t882.805\t896.115\t896.921
-1123.111\t1105.52\t1102.001\t1040.197\t1054.779\t1057.111\t1001.793\t997.596\t1002.216\t1004.082\t1003.488\t1030.617\t1049.311\t1054.313\t1065.292\t1092.803
-1334.211\t1301.02\t1279.91\t1190.808\t1211.621\t1214.588\t1156.514\t1162.915\t1163\t1164.017\t1157.489\t1198.904\t1233.494\t1266.303\t1304.581\t1323.317
-1515.893\t1481.303\t1452.394\t1409.114\t1382.917\t1369.48\t1343.495\t1346.801\t1343.198\t1343.495\t1330.82\t1381.9\t1420.389\t1466.679\t1505.296\t1512.502
-1684.307\t1645.817\t1613.813\t1565.701\t1538.487\t1522.294\t1504.999\t1507.119\t1503.007\t1503.092\t1489.484\t1538.699\t1578.206\t1629.709\t1672.48\t1680.492"""
+    value="""0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+112.799	110.298	108.517	105.084	103.982	103.007	102.583	100.082	96.182	97.793	102.116	49.299	45.696	48.197	100.718	103.897
+180.495	177.485	174.518	170.406	169.516	168.71	169.007	168.287	162.988	165.489	167.82	158.791	155.782	160.996	166.294	168.117
+319.193	315.802	309.613	305.798	304.908	303.891	303.001	304.484	298.889	299.694	298.804	292.191	292.7	296.896	297.108	297.999
+513.38	453.907	445.006	438.817	437.121	436.316	437.121	439.792	434.917	433.179	433.688	444.115	448.1	447.295	445.981	449.88
+663.397	598.795	575.396	569.08	562.679	561.407	570.818	574.294	572.301	568.614	569.08	584.086	588.791	585.315	586.502	592.479
+815.787	804.3	804.003	736.18	709.305	700.488	707.016	709.093	711.297	704.811	707.016	719.52	723.505	722.488	731.22	741.521
+976.316	970.382	966.312	938.886	925.195	890.393	856.82	847.283	853.811	853.217	855.888	878.1	881.618	882.805	896.115	896.921
+1123.111	1105.52	1102.001	1040.197	1054.779	1057.111	1001.793	997.596	1002.216	1004.082	1003.488	1030.617	1049.311	1054.313	1065.292	1092.803
+1334.211	1301.02	1279.91	1190.808	1211.621	1214.588	1156.514	1162.915	1163	1164.017	1157.489	1198.904	1233.494	1266.303	1304.581	1323.317
+1515.893	1481.303	1452.394	1409.114	1382.917	1369.48	1343.495	1346.801	1343.198	1343.495	1330.82	1381.9	1420.389	1466.679	1505.296	1512.502
+1684.307	1645.817	1613.813	1565.701	1538.487	1522.294	1504.999	1507.119	1503.007	1503.092	1489.484	1538.699	1578.206	1629.709	1672.48	1680.492"""
 )
 airmass_map = parse_map(airmass_map_input)
 if airmass_map is not None:
-    st.sidebar.write("Parsed Air Mass Map:")
+    st.sidebar.write("**Parsed Air Mass Map:**")
     st.sidebar.dataframe(airmass_map)
     confirm_airmass_map = st.sidebar.checkbox("Confirm Air Mass Map Data", value=False)
 else:
@@ -97,7 +95,7 @@ torque_map_axis_input = st.sidebar.text_area(
 )
 torque_map_axis = parse_axis(torque_map_axis_input, dtype=float)
 if torque_map_axis:
-    st.sidebar.write("Parsed Torque Map Axis:")
+    st.sidebar.write("**Parsed Torque Map Axis:**")
     st.sidebar.write(torque_map_axis)
     confirm_torque_map_axis = st.sidebar.checkbox("Confirm Torque Map Axis", value=False)
 else:
@@ -107,22 +105,22 @@ else:
 st.sidebar.subheader("5. Torque Map Data")
 torque_map_input = st.sidebar.text_area(
     "Paste Torque map data (rows separated by newlines, columns by spaces or tabs):",
-    value="""2.844\t3.438\t3.688\t2.906\t2.344\t1.281\t1.281\t1.281\t1.281\t1.281\t1.281\t25.344\t27.375\t25.938\t23.219\t22.031
-20.281\t21.188\t21.781\t23.062\t23.469\t23.844\t24.031\t24.969\t26.969\t26.094\t24.188\t27.875\t29.375\t27.562\t24.719\t23.469
-57.188\t58.344\t59.656\t61.344\t61.656\t61.906\t61.656\t61.594\t63.5\t62.562\t62.281\t65.5\t66.312\t64.344\t62.875\t62.406
-93.094\t94.312\t96.469\t97.844\t98.188\t98.531\t98.875\t98.344\t100.406\t100.125\t100.469\t102.906\t102.656\t101.156\t101.094\t100.781
-128.719\t130\t132.719\t134.531\t135.062\t135.438\t135.75\t134.844\t136.906\t137.375\t137.219\t135.312\t134.312\t133.906\t134.438\t133.531
-145.375\t166.406\t170.281\t173.438\t174.25\t174.531\t173.188\t171.969\t173.406\t174.281\t174.094\t167.875\t166.281\t167.219\t167.562\t165.875
-177.625\t200.062\t209.188\t211.344\t214.688\t215.344\t210.531\t209.219\t209.688\t211.25\t211.031\t205.625\t203.812\t205.219\t204.625\t202.375
-213.438\t226.906\t230.719\t242.719\t248.438\t250.531\t248.312\t247.406\t246.719\t249.031\t248.281\t244.375\t242.969\t243.5\t241.188\t238.25
-245.781\t248.938\t248.938\t263.594\t269.438\t278.219\t281.812\t283.25\t281.406\t282.938\t282.094\t275.938\t275.031\t274.594\t270.75\t267.438
-267.188\t273.25\t275.125\t280.281\t289.875\t302.062\t313.5\t318.344\t315.656\t314.719\t313.812\t306.438\t305.312\t304.969\t300.875\t300.719
-339.531\t348.594\t349.438\t379.562\t367.438\t363\t384.875\t382.906\t382.531\t382.188\t383.406\t373\t365.094\t363.25\t360.25\t351.844
-410.594\t425.312\t433.75\t447.094\t455\t459.844\t465.125\t464.469\t465.75\t465.719\t469.969\t454.938\t443.531\t429.531\t418.531\t416.531"""
+    value="""2.844	3.438	3.688	2.906	2.344	1.281	1.281	1.281	1.281	1.281	1.281	25.344	27.375	25.938	23.219	22.031
+20.281	21.188	21.781	23.062	23.469	23.844	24.031	24.969	26.969	26.094	24.188	27.875	29.375	27.562	24.719	23.469
+57.188	58.344	59.656	61.344	61.656	61.906	61.656	61.594	63.5	62.562	62.281	65.5	66.312	64.344	62.875	62.406
+93.094	94.312	96.469	97.844	98.188	98.531	98.875	98.344	100.406	100.125	100.469	102.906	102.656	101.156	101.094	100.781
+128.719	130	132.719	134.531	135.062	135.438	135.75	134.844	136.906	137.375	137.219	135.312	134.312	133.906	134.438	133.531
+145.375	166.406	170.281	173.438	174.25	174.531	173.188	171.969	173.406	174.281	174.094	167.875	166.281	167.219	167.562	165.875
+177.625	200.062	209.188	211.344	214.688	215.344	210.531	209.219	209.688	211.25	211.031	205.625	203.812	205.219	204.625	202.375
+213.438	226.906	230.719	242.719	248.438	250.531	248.312	247.406	246.719	249.031	248.281	244.375	242.969	243.5	241.188	238.25
+245.781	248.938	248.938	263.594	269.438	278.219	281.812	283.25	281.406	282.938	282.094	275.938	275.031	274.594	270.75	267.438
+267.188	273.25	275.125	280.281	289.875	302.062	313.5	318.344	315.656	314.719	313.812	306.438	305.312	304.969	300.875	300.719
+339.531	348.594	349.438	379.562	367.438	363	384.875	382.906	382.531	382.188	383.406	373	365.094	363.25	360.25	351.844
+410.594	425.312	433.75	447.094	455	459.844	465.125	464.469	465.75	465.719	469.969	454.938	443.531	429.531	418.531	416.531"""
 )
 torque_map = parse_map(torque_map_input)
 if torque_map is not None:
-    st.sidebar.write("Parsed Torque Map:")
+    st.sidebar.write("**Parsed Torque Map:**")
     st.sidebar.dataframe(torque_map)
     confirm_torque_map = st.sidebar.checkbox("Confirm Torque Map Data", value=False)
 else:
@@ -130,11 +128,11 @@ else:
 
 # Check if all data is confirmed
 data_confirmed = (
-    confirm_rpm and
-    confirm_torque_airmass and
-    confirm_airmass_map and
-    confirm_torque_map_axis and
-    confirm_torque_map
+    'confirm_rpm' in locals() and confirm_rpm and
+    'confirm_torque_airmass' in locals() and confirm_torque_airmass and
+    'confirm_airmass_map' in locals() and confirm_airmass_map and
+    'confirm_torque_map_axis' in locals() and confirm_torque_map_axis and
+    'confirm_torque_map' in locals() and confirm_torque_map
 )
 
 if not data_confirmed:
@@ -152,28 +150,18 @@ torque_df = torque_map.copy()
 torque_df.columns = rpm_axis
 torque_df.index = torque_map_axis
 
-# Display the maps
-st.header("ECU Maps")
+# Display the maps as tables
+st.header("ECU Maps as Tables")
 
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Air Mass Map")
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(airmass_df, annot=False, cmap="viridis")
-    plt.xlabel("RPM")
-    plt.ylabel("Torque Air Mass")
-    plt.title("Air Mass Map")
-    st.pyplot(plt)
+    st.dataframe(airmass_df)
 
 with col2:
     st.subheader("Torque Map")
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(torque_df, annot=False, cmap="plasma")
-    plt.xlabel("RPM")
-    plt.ylabel("Torque")
-    plt.title("Torque Map")
-    st.pyplot(plt)
+    st.dataframe(torque_df)
 
 # Main Functionality: Scaling the Maps
 st.header("Scale Torque Axis")
@@ -183,43 +171,45 @@ Enter the new maximum torque value you want to scale the torque axis to. The app
 """)
 
 # Input for new max torque
+# Fixing the error by setting min_value to the smallest torque value or lower
 new_max_torque = st.number_input(
     "Enter the new maximum torque (e.g., 650):",
-    min_value=torque_map_axis[-1],
+    min_value=0.0,  # Changed from torque_map_axis[-1] to 0.0
     max_value=20000.0,
     value=650.0,
     step=1.0
 )
 
 # Define new torque axis for airflow map
+# Ensure the new max torque is included
 new_torque_axis = sorted(list(set([0, 25, 50, 100, 150, 200, 250, 300, 350, 450, 550, new_max_torque])))
 
 # Display new torque axis
-st.write("New Torque Axis for Airflow Map:")
+st.write("**New Torque Axis for Airflow Map:**")
 st.write(new_torque_axis)
 
 # Perform linear regression based on the last three data points
-# Assuming last three torque points in torque_map_axis are used for scaling
-last_three_torque = torque_map_axis[-3:].reshape(-1, 1)
-new_last_three_torque = np.array(new_torque_axis[-3:]).reshape(-1, 1)
+# Ensure that there are at least three data points
+if len(torque_map_axis) < 3:
+    st.error("Not enough data points in Torque Map Axis to perform scaling.")
+    st.stop()
+
+# Extract the last three torque points and their corresponding new values
+last_three_torque = np.array(torque_map_axis[-3:]).reshape(-1, 1)
+last_three_new_torque = np.array(new_torque_axis[-3:]).reshape(-1, 1)
 
 # Fit linear regression model
 reg = LinearRegression()
-reg.fit(last_three_torque, new_last_three_torque)
-# Predict scaling factor
+reg.fit(last_three_torque, last_three_new_torque)
+
+# Predict scaling factor and intercept
 scaling_factor = reg.coef_[0][0]
 intercept = reg.intercept_[0]
 
-st.write(f"Scaling Factor: {scaling_factor:.4f}")
-st.write(f"Intercept: {intercept:.4f}")
+st.write(f"**Scaling Factor:** {scaling_factor:.4f}")
+st.write(f"**Intercept:** {intercept:.4f}")
 
-# Scale the airflow (assuming airflow is inversely related to torque)
-# New airflow axis can be derived similarly
-# Here, we'll assume airflow scales linearly with torque
-
-# Update RPM axis remains the same
-new_rpm_axis = rpm_axis.copy()
-
+# Scale the airflow (assuming airflow scales linearly with torque)
 # Update Torque Air Mass Axis based on scaling
 new_torque_airmass_axis = [scaling_factor * torque + intercept for torque in torque_airmass_axis]
 
@@ -231,13 +221,11 @@ new_airmass_df.index = new_torque_airmass_axis
 new_torque_map_axis = new_torque_axis
 
 # Create new Torque DataFrame by interpolating to new torque axis
-# Here we use linear interpolation for simplicity
-torque_df_reset = torque_df.reset_index().rename(columns={'index': 'Torque'})
-new_torque_df = pd.DataFrame(columns=new_rpm_axis, index=new_torque_map_axis)
+new_torque_df = pd.DataFrame(columns=new_rpm_axis := rpm_axis.copy(), index=new_torque_map_axis)
 
 for rpm in new_rpm_axis:
     # Get the original torque and corresponding values
-    X = torque_df.index.values.reshape(-1, 1)
+    X = np.array(torque_df.index).reshape(-1, 1)
     y = torque_df[rpm].values
     # Fit linear regression
     model = LinearRegression()
@@ -247,35 +235,26 @@ for rpm in new_rpm_axis:
     new_torque_df[rpm] = new_y
 
 # Update Air Mass Map based on new torque air mass axis
-# This step depends on how airflow is related to torque. Assuming inverse scaling.
-# Here, we'll use interpolation for simplicity.
+# Assuming linear relationship for simplicity
+new_airmass_df_interpolated = new_airmass_df.copy()
 
+# Since the new torque air mass axis may have different values, we perform interpolation
 new_airmass_df_interpolated = airmass_df.copy()
 new_airmass_df_interpolated.index = new_torque_airmass_axis
 new_airmass_df_interpolated = new_airmass_df_interpolated.reindex(new_torque_airmass_axis).interpolate(method='linear', axis=0)
 
-# Display the scaled maps
-st.header("Scaled ECU Maps")
+# Display the scaled maps as tables
+st.header("Scaled ECU Maps as Tables")
 
 col3, col4 = st.columns(2)
 
 with col3:
     st.subheader("Scaled Air Mass Map")
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(new_airmass_df_interpolated, annot=False, cmap="viridis")
-    plt.xlabel("RPM")
-    plt.ylabel("Scaled Torque Air Mass")
-    plt.title("Scaled Air Mass Map")
-    st.pyplot(plt)
+    st.dataframe(new_airmass_df_interpolated)
 
 with col4:
     st.subheader("Scaled Torque Map")
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(new_torque_df, annot=False, cmap="plasma")
-    plt.xlabel("RPM")
-    plt.ylabel("Scaled Torque")
-    plt.title("Scaled Torque Map")
-    st.pyplot(plt)
+    st.dataframe(new_torque_df)
 
 # Optionally, allow users to download the scaled maps
 def convert_df(df):
