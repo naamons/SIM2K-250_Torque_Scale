@@ -62,7 +62,11 @@ default_torque_airmass_input = """0
 400
 450
 500"""
-torque_airmass_input = st.sidebar.text_area("Edit Torque Axis for Air Mass Map (one value per line):", default_torque_airmass_input, height=150)
+torque_airmass_input = st.sidebar.text_area(
+    "Edit Torque Axis for Air Mass Map (one value per line):",
+    default_torque_airmass_input,
+    height=150
+)
 torque_airmass_axis = parse_axis(torque_airmass_input)
 
 # 3. Air Mass Map Data
@@ -79,7 +83,11 @@ default_airmass_map_input = """0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 1334.211 1301.02 1279.91 1190.808 1211.621 1214.588 1156.514 1162.915 1163 1164.017 1157.489 1198.904 1233.494 1266.303 1304.581 1323.317
 1515.893 1481.303 1452.394 1409.114 1382.917 1369.48 1343.495 1346.801 1343.198 1343.495 1330.82 1381.9 1420.389 1466.679 1505.296 1512.502
 1684.307 1645.817 1613.813 1565.701 1538.487 1522.294 1504.999 1507.119 1503.007 1503.092 1489.484 1538.699 1578.206 1629.709 1672.48 1680.492"""
-airmass_map_input = st.sidebar.text_area("Edit Air Mass Map Data (rows separated by new lines):", default_airmass_map_input, height=400)
+airmass_map_input = st.sidebar.text_area(
+    "Edit Air Mass Map Data (rows separated by new lines):",
+    default_airmass_map_input,
+    height=400
+)
 airmass_map = parse_map(airmass_map_input)
 
 # Assign RPM and Torque Airmass Axis if parsing was successful
@@ -108,7 +116,11 @@ default_torque_map_input_axis = """50.02
 898.998
 1100.009
 1400"""
-torque_map_axis_input = st.sidebar.text_area("Edit Airflow Axis for Torque Map (one value per line):", default_torque_map_input_axis, height=150)
+torque_map_axis_input = st.sidebar.text_area(
+    "Edit Airflow Axis for Torque Map (one value per line):",
+    default_torque_map_input_axis,
+    height=150
+)
 torque_map_axis = parse_axis(torque_map_axis_input)
 
 # 5. Torque Map Data
@@ -125,7 +137,11 @@ default_torque_map_input_data = """2.844 3.438 3.688 2.906 2.344 1.281 1.281 1.2
 267.188 273.25 275.125 280.281 289.875 302.062 313.5 318.344 315.656 314.719 313.812 306.438 305.312 304.969 300.875 300.719
 339.531 348.594 349.438 379.562 367.438 363 384.875 382.906 382.531 382.188 383.406 373 365.094 363.25 360.25 351.844
 410.594 425.312 433.75 447.094 455 459.844 465.125 464.469 465.75 465.719 469.969 454.938 443.531 429.531 418.531 416.531"""
-torque_map_input = st.sidebar.text_area("Edit Torque Map Data (rows separated by new lines):", default_torque_map_input_data, height=400)
+torque_map_input = st.sidebar.text_area(
+    "Edit Torque Map Data (rows separated by new lines):",
+    default_torque_map_input_data,
+    height=400
+)
 torque_map = parse_map(torque_map_input)
 
 # Assign Torque Map Axis if parsing was successful
@@ -154,14 +170,23 @@ new_max_torque = st.sidebar.number_input(
     step=1.0
 )
 
-# Function to generate smoothly interpolated torque points
+# Function to generate smoothly interpolated torque points (whole numbers)
 def generate_smooth_torque_points(current_axis, new_max, max_new_points=3):
-    """Generate smoothly interpolated torque points between the last current axis value and new_max."""
+    """Generate smoothly interpolated torque points between the last current axis value and new_max as integers."""
     last = current_axis[-1]
     if new_max <= last:
         st.warning("New maximum torque must be greater than the current maximum torque.")
         return []
-    return list(np.linspace(last + (new_max - last)/max_new_points, new_max, max_new_points))
+    # Generate float points
+    float_points = list(np.linspace(last + (new_max - last)/max_new_points, new_max, max_new_points))
+    # Convert to integers by rounding
+    int_points = [int(round(pt)) for pt in float_points]
+    # Remove duplicates and ensure they are within the range
+    unique_int_points = []
+    for pt in int_points:
+        if last < pt <= new_max and pt not in unique_int_points:
+            unique_int_points.append(pt)
+    return unique_int_points
 
 # Generate new torque points for Air Mass Map
 new_torque_points = generate_smooth_torque_points(torque_airmass_axis, new_max_torque, max_new_points=3)
@@ -191,9 +216,10 @@ new_airmass_rows = new_torque_points if new_torque_points else []
 
 # Display Extended Air Mass Map with Highlighted New Rows
 st.header("Extended Air Mass Map")
+
 def highlight_new_rows_airmass(row):
     if row.name in new_airmass_rows:
-        return ['background-color: lightgreen'] * len(row)
+        return ['background-color: lightgreen; color: black'] * len(row)
     else:
         return [''] * len(row)
 
@@ -214,7 +240,7 @@ else:
 combined_torque_map_axis = sorted(list(torque_map_axis) + list(new_torque_axis_points))
 
 # Extend Torque Map
-if new_torque_axis_points.size > 0:
+if len(new_torque_axis_points) > 0:
     extended_torque_map = torque_map.copy()
     for new_point in new_torque_axis_points:
         new_values = []
@@ -234,13 +260,14 @@ else:
     extended_torque_map = torque_map.copy()
 
 # Identify newly added rows for Torque Map
-new_torque_rows = new_torque_axis_points.tolist() if new_torque_axis_points.size > 0 else []
+new_torque_rows = new_torque_axis_points.tolist() if len(new_torque_axis_points) > 0 else []
 
 # Display Extended Torque Map with Highlighted New Rows
 st.header("Extended Torque Map")
+
 def highlight_new_rows_torque(row):
     if row.name in new_torque_rows:
-        return ['background-color: lightgreen'] * len(row)
+        return ['background-color: lightgreen; color: black'] * len(row)
     else:
         return [''] * len(row)
 
