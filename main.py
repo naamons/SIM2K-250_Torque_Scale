@@ -101,7 +101,7 @@ if rpm_axis and torque_airmass_axis and not airmass_map.empty:
         airmass_map.index = torque_airmass_axis
         # Add axis labels
         airmass_map.columns.name = 'RPM (RPM)'
-        airmass_map.index.name = 'Torque Air Mass (mg/stk)'
+        airmass_map.index.name = 'Torque (Nm)'
 else:
     st.stop()
 
@@ -158,7 +158,7 @@ if torque_map_axis and not torque_map.empty:
         torque_map.index = torque_map_axis
         # Add axis labels
         torque_map.columns.name = 'RPM (RPM)'
-        torque_map.index.name = 'Torque (Nm)'
+        torque_map.index.name = 'Air Mass (MG/STK)'
 else:
     st.stop()
 
